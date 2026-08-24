@@ -2,7 +2,7 @@ import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "no
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { HOSTNAMES, SITE, SITE_URL } from "./config.js";
+import { ASSET_ORIGIN, HOSTNAMES, SITE, SITE_URL } from "./config.js";
 import { INITIAL_THEME, THEMES } from "./themes.js";
 import { TAGLINES } from "./taglines.js";
 import { renderWord } from "./figlet/render.js";
@@ -67,7 +67,7 @@ function build(): void {
 
   const data: SiteData = { themes: THEMES, initialThemeIndex, taglines: TAGLINES };
 
-  const ogImage = `${SITE_URL}/og.png`;
+  const ogImage = `${ASSET_ORIGIN}/og.png`;
 
   const html = page({
     site: SITE,

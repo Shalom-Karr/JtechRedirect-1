@@ -177,6 +177,11 @@ Also shipped: JSON-LD (`Organization` / `WebSite` / `WebPage`), Open Graph and
 Twitter card tags, `robots.txt`, `sitemap.xml`, and security/caching headers via
 `_headers`.
 
+`og:image` points at the project's own `pages.dev` origin rather than at the
+canonical host — jtechforums.org is a different Pages project and answers
+`/og.png` with its own HTML, which would break every social card. See
+`ASSET_ORIGIN` in `src/config.ts`.
+
 `og.png` is generated at build time by `src/site/og-image.ts` — the same block
 art, rasterised to a 1200×630 PNG written byte by byte with `node:zlib` for the
 deflate, so the build stays dependency-free.

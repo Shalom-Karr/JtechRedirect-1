@@ -23,6 +23,17 @@ export const SITE: SiteConfig = {
 export const SITE_URL = `https://${SITE.domain}`;
 
 /**
+ * Where build outputs like the social card are fetched from.
+ *
+ * Deliberately not `SITE_URL`: jtechforums.org is served by a different Pages
+ * project, which answers `/og.png` with its own HTML rather than an image — an
+ * `og:image` pointing there would break every social card. The project's own
+ * pages.dev origin always serves these files, and sits behind no WAF rule that
+ * could turn a scraper away.
+ */
+export const ASSET_ORIGIN = "https://jtechredirect.pages.dev";
+
+/**
  * Every hostname this build is served from. One Cloudflare Pages project backs
  * all of them; they differ only in the URL in the address bar, which is why
  * each carries a canonical pointing back at `SITE_URL`.

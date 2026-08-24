@@ -40,8 +40,11 @@ export const ASSET_ORIGIN = "https://jtechredirect.pages.dev";
  */
 export const HOSTNAMES: readonly string[] = [
   "mitmachim.com",
+  "www.mitmachim.com",
   "apps4flip.org",
+  "www.apps4flip.org",
   "jtechforums.com",
+  "www.jtechforums.com",
   "jtech.tripleu.org",
   "jtech.tripleumdm.com",
   "jtech.jtechforums.org",

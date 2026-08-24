@@ -144,13 +144,18 @@ One Cloudflare Pages project, `jtechredirect`, serves every hostname:
 
 | Hostname | |
 | --- | --- |
-| `mitmachim.com` | apex |
-| `apps4flip.org` | apex |
-| `www.apps4flip.org` | so the apex and www do not diverge |
-| `jtechforums.com` | apex |
-| `jtech.tripleu.org` | |
-| `jtech.tripleumdm.com` | |
-| `jtech.jtechforums.org` | |
+| `mitmachim.com` / `www.mitmachim.com` | apex + www |
+| `apps4flip.org` / `www.apps4flip.org` | apex + www |
+| `jtechforums.com` / `www.jtechforums.com` | apex + www |
+| `jtech.tripleu.org` | no www — see below |
+| `jtech.tripleumdm.com` | no www — see below |
+| `jtech.jtechforums.org` | no www — see below |
+
+The three `jtech.*` hostnames have no `www.` variant on purpose. `www.jtech.…`
+is a *second-level* subdomain, and Cloudflare's edge certificate does not cover
+that depth — attaching one was tried and its TLS handshake failed outright, so
+it was removed rather than left as a hostname that looks configured and does not
+resolve. Covering it would need Advanced Certificate Manager.
 
 Each is a proxied `CNAME` to `jtechredirect.pages.dev`. The three apexes
 previously carried address records that were removed to attach them; **their MX,

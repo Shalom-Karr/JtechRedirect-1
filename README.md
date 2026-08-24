@@ -16,6 +16,15 @@ same interactions — the word and the copy are what changed.
 npm install
 npm run check     # compile, test, build
 npm run serve     # build, then serve dist/ on :8080 (PORT overrides)
+npm run deploy    # build, then push dist/ to Cloudflare Pages
+```
+
+`deploy` needs Cloudflare credentials in the environment. Use a **scoped API
+token** (Account → Cloudflare Pages → Edit), never the account-wide Global key:
+
+```
+export CLOUDFLARE_API_TOKEN=...
+export CLOUDFLARE_ACCOUNT_ID=2d433e3215fc8be53cc63fc504a5b993
 ```
 
 The output is `dist/`: a self-contained `index.html`, two font files, a
@@ -129,6 +138,32 @@ integration, not baffle's internals: that a changeover lands on the right line,
 that gaps survive, that the announcement waits, that reduced motion skips it,
 and that the walk covers every line.
 
+## Hosting
+
+One Cloudflare Pages project, `jtechredirect`, serves every hostname:
+
+| Hostname | |
+| --- | --- |
+| `mitmachim.com` | apex |
+| `apps4flip.org` | apex |
+| `www.apps4flip.org` | so the apex and www do not diverge |
+| `jtechforums.com` | apex |
+| `jtech.tripleu.org` | |
+| `jtech.tripleumdm.com` | |
+| `jtech.jtechforums.org` | |
+
+Each is a proxied `CNAME` to `jtechredirect.pages.dev`. The three apexes
+previously carried address records that were removed to attach them; **their MX,
+SPF, DKIM and site-verification TXT records were left untouched**, so mail and
+domain verification are unaffected.
+
+`jtechforums.org` itself is deliberately **not** in this list — its apex stays on
+the existing `jtechforums` Pages project. Only the `jtech.` subdomain of it is
+served from here.
+
+Cloudflare Web Analytics is enabled per-zone with auto-install, so the beacon is
+injected at the edge and does not appear in this repo.
+
 ## Search and social
 
 Six hostnames serving identical content is duplicate content by definition. The
@@ -146,8 +181,7 @@ Twitter card tags, `robots.txt`, `sitemap.xml`, and security/caching headers via
 art, rasterised to a 1200×630 PNG written byte by byte with `node:zlib` for the
 deflate, so the build stays dependency-free.
 
-Cloudflare Web Analytics is enabled per-zone with **auto-install**, so the beacon
-is injected at the edge rather than sitting in this repo.
+
 
 ## One thing to know before this goes live
 

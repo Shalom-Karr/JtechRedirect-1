@@ -12,7 +12,8 @@
     "test": "npm run compile && node --test build/test/*.test.js",
     "build": "npm run compile && node build/src/build.js",
     "serve": "npm run build && node build/src/serve.js",
-    "check": "npm run test && npm run build"
+    "check": "npm run test && npm run build",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name jtechredirect --branch main"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

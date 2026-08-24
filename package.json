@@ -1,0 +1,25 @@
+{
+  "name": "jtech-domains",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A one-page block-type wordmark site for jtechforums.org, recreated from oligarchy.fyi",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf build dist",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.client.json --noEmit",
+    "bundle": "esbuild src/client/client.ts --bundle --format=iife --target=es2022 --charset=utf8 --outfile=build/client.js",
+    "compile": "npm run typecheck && npm run bundle",
+    "test": "npm run compile && node --test build/test/*.test.js",
+    "build": "npm run compile && node build/src/build.js",
+    "serve": "npm run build && node build/src/serve.js",
+    "check": "npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "baffle": "^0.3.6"
+  }
+}

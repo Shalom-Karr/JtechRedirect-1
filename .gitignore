@@ -1,0 +1,10 @@
+node_modules/
+build/
+dist/
+
+# Never commit credentials. This repo is public.
+.env
+.env.*
+*.key
+.dev.vars
+.wrangler/

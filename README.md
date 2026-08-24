@@ -161,6 +161,23 @@ domain verification are unaffected.
 the existing `jtechforums` Pages project. Only the `jtech.` subdomain of it is
 served from here.
 
+### The redirect rules these domains used to have
+
+`mitmachim.com`, `apps4flip.org` and `jtechforums.com` each had a Cloudflare
+dynamic redirect rule — expression `true`, 301 to `https://jtechforums.org` with
+the path preserved. That rule fires at the edge *before* Pages, so it had to be
+turned off for this page to be visible on those domains.
+
+The rules were **disabled, not deleted** (`enabled: false`, rule name "Redirect
+to jtechforums.org"), so the previous behaviour is one toggle away in
+Rules → Redirect Rules per zone.
+
+Worth knowing that this is a real SEO trade: a 301 consolidates ranking signal
+strictly better than a canonical does. Serving a landing page on these domains
+is what was asked for, and the canonical is the next-best consolidation — but if
+the goal is purely to pass signal to the main site, re-enabling those three
+rules is the stronger answer.
+
 Cloudflare Web Analytics is enabled per-zone with auto-install, so the beacon is
 injected at the edge and does not appear in this repo.
 

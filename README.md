@@ -41,7 +41,7 @@ export CLOUDFLARE_API_TOKEN=...
 export CLOUDFLARE_ACCOUNT_ID=2d433e3215fc8be53cc63fc504a5b993
 ```
 
-## Four things that will bite you
+## Five things that will bite you
 
 **The redirect rules are disabled, not deleted.** `mitmachim.com`,
 `apps4flip.org` and `jtechforums.com` each had a rule 301-ing everything to
@@ -61,6 +61,12 @@ answers `/og.png` with its own HTML, which breaks every social card. See
 **No `www.jtech.*`.** That's a second-level subdomain; the edge certificate
 doesn't cover it. It was tried, TLS failed, it was removed. Needs Advanced
 Certificate Manager.
+
+**No WebCrypto, no rotation.** The taglines are sealed, so showing one means
+opening it, which needs a secure context. `https://` and `http://localhost` are
+fine. Served from a bare LAN IP it is not, and the page silently keeps the one
+line it was rendered with — nothing errors, so there is nothing in the console
+to find.
 
 ## How the wordmark works
 
@@ -94,6 +100,34 @@ any repeat, and two reloads take different routes.
 
 Screen readers get only settled lines, never the scramble.
 `prefers-reduced-motion` skips it.
+
+### They don't ship as text
+
+Each line is an AES-256-GCM box under a key of its own, stretched with 600,000
+rounds of PBKDF2-SHA-256 over a salt that is fresh every build.
+`src/site/seal.ts` writes them, `src/client/open.ts` opens them,
+`test/seal.test.ts` holds those two ends together.
+
+This is not secrecy and can't be — the password is right there in the bundle,
+because the browser is the thing doing the opening. What it buys is that
+`view-source` shows base64 instead of the list, so the jokes get met one at a
+time rather than read in a block. The cost is per line, ~0.1s in Chrome on a
+laptop: the page pays it for the next line while the current one is still up, so
+it disappears into the 7s hold. Reading all 128 means paying it 128 times —
+~15s of pegged CPU on a laptop, minutes on a phone, and a script to drive it.
+Whoever writes that script was never going to be stopped by anything shipped to
+their machine. Whoever opens devtools out of idle curiosity is.
+
+Exactly one line ships in the clear: the site description, because the page has
+to say something before a script has run and that line is in the meta tags
+anyway. `src/build.ts` fails the build if any other tagline turns up in the HTML.
+
+`ITERATIONS` in `src/site/seal.ts` is the only lever, and it is double-edged —
+it slows a dump and the first line of a visit by the same factor, and the first
+line is the one a visitor actually waits for.
+
+A slow enough device just misses a beat: with nothing open yet the line holds
+another 7s instead of scrambling into a blank.
 
 ## Notes
 

@@ -1,0 +1,97 @@
+name: Deploy
+
+# Pushes to main go live. Pull requests are built and tested but not deployed:
+# the Pages project is direct-upload, so a preview would have to overwrite the
+# production deployment to be visible.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # A newer push supersedes an in-flight one rather than racing it to the edge.
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # Guard rails: a deploy that ships an empty or unstyled page would still
+      # be a green build without these.
+      - name: Check the build produced what it should
+        run: |
+          set -euo pipefail
+          for f in dist/index.html dist/og.png dist/robots.txt dist/sitemap.xml dist/_headers; do
+            test -s "$f" || { echo "missing or empty: $f"; exit 1; }
+          done
+          grep -q 'rel="canonical"' dist/index.html || { echo "no canonical"; exit 1; }
+          grep -q '<svg class="logo"' dist/index.html || { echo "no wordmark"; exit 1; }
+          echo "dist/ looks right ($(wc -c < dist/index.html) bytes)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://jtechforums.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name jtechredirect --branch main
+
+      - name: Confirm the live site is serving this build
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 10); do
+            sleep 15
+            live=$(curl -fsS -A 'deploy-check' https://jtechredirect.pages.dev/ || true)
+            if [ -n "$live" ] && [ "$(printf '%s' "$live" | sha256sum | cut -d' ' -f1)" = "$(sha256sum dist/index.html | cut -d' ' -f1)" ]; then
+              echo "live matches this build"; exit 0
+            fi
+            echo "attempt $i: not matching yet"
+          done
+          echo "live site did not match the build within the timeout"; exit 1

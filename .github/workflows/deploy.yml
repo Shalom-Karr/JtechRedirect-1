@@ -86,12 +86,17 @@ jobs:
       - name: Confirm the live site is serving this build
         run: |
           set -euo pipefail
+          # Compared as files, never through $(...): command substitution strips
+          # trailing newlines, so hashing a captured body can never equal the
+          # hash of a file that ends in one.
           for i in $(seq 1 10); do
             sleep 15
-            live=$(curl -fsS -A 'deploy-check' https://jtechredirect.pages.dev/ || true)
-            if [ -n "$live" ] && [ "$(printf '%s' "$live" | sha256sum | cut -d' ' -f1)" = "$(sha256sum dist/index.html | cut -d' ' -f1)" ]; then
-              echo "live matches this build"; exit 0
+            if curl -fsS -A 'deploy-check' https://jtechredirect.pages.dev/ -o live.html \
+               && cmp -s live.html dist/index.html; then
+              echo "live matches this build byte for byte"
+              exit 0
             fi
-            echo "attempt $i: not matching yet"
+            echo "attempt $i: not serving this build yet ($(wc -c < live.html 2>/dev/null || echo 0) bytes live, $(wc -c < dist/index.html) expected)"
           done
-          echo "live site did not match the build within the timeout"; exit 1
+          echo "::error::live site did not serve this build within the timeout"
+          exit 1

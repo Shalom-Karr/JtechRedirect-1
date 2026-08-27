@@ -26,6 +26,20 @@ Changing the wordmark is one line in `src/config.ts` — the SVG, viewBox, width
 cap and favicon all follow from it. **A-Z and spaces only:** the type has no
 digits or punctuation, so anything else stops the build.
 
+## Deploying
+
+**Merging to `main` deploys.** `.github/workflows/deploy.yml` builds, tests and
+pushes to Cloudflare Pages on every push to `main`, then checks the live page
+byte-for-byte against what it just built.
+
+Pull requests build and test but do **not** deploy — the Pages project is
+direct-upload, which has no separate preview environment, so a PR deploy would
+overwrite production.
+
+CI uses two repo secrets: `CLOUDFLARE_API_TOKEN` (scoped to Pages Write on this
+account only) and `CLOUDFLARE_ACCOUNT_ID`. `npm run deploy` still works locally
+for a manual push.
+
 ## Hosting
 
 One Cloudflare Pages project, `jtechredirect`, serves nine hostnames:

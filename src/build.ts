@@ -9,6 +9,7 @@ import { renderWord } from "./figlet/render.js";
 import { encodeLogo } from "./logo/encode.js";
 import { page } from "./site/template.js";
 import { renderOgImage } from "./site/og-image.js";
+import { seal } from "./site/seal.js";
 import { headersFile, robotsTxt, sitemapXml } from "./site/seo.js";
 import type { SiteData } from "./site/data.js";
 
@@ -55,6 +56,23 @@ function bundleClient(data: SiteData): string {
   return compiled.replace(token, literal);
 }
 
+/**
+ * The sealing is only worth the trouble if none of the lines also ships in the
+ * clear. One legitimately does: the site description, which has to be readable
+ * in the meta tags and the JSON-LD, and which is therefore also the line the
+ * page renders before any script runs. Every other tagline must be absent.
+ */
+function assertSealed(html: string, inTheClear: string): void {
+  const leaked = TAGLINES.filter((line) => line !== inTheClear && html.includes(line));
+  if (leaked.length > 0) {
+    throw new Error(
+      `build: ${leaked.length} tagline(s) shipped in the clear, starting with ` +
+        `${JSON.stringify(leaked[0])}. The page should carry ${JSON.stringify(inTheClear)} ` +
+        "and nothing else from the list.",
+    );
+  }
+}
+
 function build(): void {
   const art = renderWord(SITE.wordmark);
   const logo = encodeLogo(art);
@@ -65,7 +83,7 @@ function build(): void {
   }
   const initialTheme = THEMES[initialThemeIndex];
 
-  const data: SiteData = { themes: THEMES, initialThemeIndex, taglines: TAGLINES };
+  const data: SiteData = { themes: THEMES, initialThemeIndex, taglines: seal(TAGLINES) };
 
   const ogImage = `${ASSET_ORIGIN}/og.png`;
 
@@ -74,11 +92,14 @@ function build(): void {
     url: SITE_URL,
     logo,
     initialTheme,
-    // The server-rendered line; the client swaps in a random one on load.
-    initialTagline: TAGLINES[0],
+    // The one line the page can say before a script has run, so it is the one
+    // already readable anyway: the description in the meta tags.
+    initialTagline: SITE.description,
     script: bundleClient(data),
     ogImage,
   });
+
+  assertSealed(html, SITE.description);
 
   rmSync(dist, { recursive: true, force: true });
   mkdirSync(join(dist, "fonts"), { recursive: true });
@@ -104,7 +125,7 @@ function build(): void {
   console.log(
     `dist/index.html  ${kb} kB  —  ${SITE.wordmark} ` +
       `(${logo.inkColumns}×${logo.rows} cells, ${logo.capWidthRem}rem cap, ` +
-      `${THEMES.length} themes, ${TAGLINES.length} taglines)`,
+      `${THEMES.length} themes, ${TAGLINES.length} taglines sealed)`,
   );
   console.log(`  + og.png, robots.txt, sitemap.xml, _headers`);
   console.log(`  canonical ${SITE_URL} — served from ${HOSTNAMES.length} hostnames`);

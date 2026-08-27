@@ -1,8 +1,13 @@
 import baffle from "baffle";
 
+import { opener } from "./open.js";
+
 /**
  * The page's whole runtime: click the banner to repaint in the next theme, and
  * shuffle the tagline over to the next one on a timer.
+ *
+ * The taglines arrive sealed (see `src/site/data.ts`), so each one is opened
+ * during the hold before it is due rather than all of them up front.
  *
  * esbuild bundles this and its dependencies into a single IIFE, which the build
  * then inlines into the page; the build asserts the bundle is import-free, so
@@ -108,7 +113,9 @@ function stride(length: number): number {
   return step;
 }
 
-const count = data.taglines.length;
+const sealed = data.taglines;
+const count = sealed.lines.length;
+const open = opener(sealed);
 const step = stride(count);
 let taglineIndex = Math.floor(random() * count);
 
@@ -146,10 +153,59 @@ function changeover(next: string): void {
   }, OBFUSCATE_MS + REVEAL_MS);
 }
 
-tagline.textContent = data.taglines[taglineIndex];
-announcer.textContent = data.taglines[taglineIndex];
+/* -- opening the next line ahead of its turn ----------------------------- */
 
-setInterval(() => {
+/** The line the next beat will show, once it has come open. */
+let upcoming: string | undefined;
+
+/** Whether an open is already in flight, so a missed beat does not stack. */
+let opening = false;
+
+function lookAhead(): void {
+  if (opening || upcoming !== undefined) {
+    return;
+  }
+  opening = true;
+  void open((taglineIndex + step) % count).then(
+    (line) => {
+      upcoming = line;
+      opening = false;
+    },
+    () => {
+      // Nothing to do about it here; the next beat asks again.
+      opening = false;
+    },
+  );
+}
+
+const rotating = setInterval(() => {
+  if (upcoming === undefined) {
+    // Still opening. Hold this line for another beat rather than start a
+    // scramble with nothing to land on.
+    lookAhead();
+    return;
+  }
+
   taglineIndex = (taglineIndex + step) % count;
-  changeover(data.taglines[taglineIndex]);
+  const line = upcoming;
+  upcoming = undefined;
+  changeover(line);
+  lookAhead();
 }, ROTATE_MS);
+
+// The page ships with a line already in it, so there is something to read while
+// this visit's own opening line comes open. That swap has always been abrupt —
+// it just used to be instant as well.
+void open(taglineIndex).then(
+  (line) => {
+    tagline.textContent = line;
+    announcer.textContent = line;
+    lookAhead();
+  },
+  () => {
+    // The first line failing means the boxes cannot be opened at all — no
+    // `crypto.subtle`, which is what an insecure origin gets. The page keeps
+    // the line it was served rather than retrying every seven seconds.
+    clearInterval(rotating);
+  },
+);

@@ -42,8 +42,7 @@ test("the regulars are shuffled through the list, not clumped", () => {
     "biden2020prez",
     "donbot",
     "kosherflipper",
-    "shalom karr will do it",
-    "break from shalom karr",
+    "shalom karr",
   ];
 
   const positions = regulars.map((name) => {
